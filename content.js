@@ -1,3 +1,5 @@
+// These are the possible tags we can apply to a YouTube video.
+// If you want to add a new tag category, put it here!
 const CATEGORIES = {
   game: ["ddnet", "teeworlds", "ddper"],
   video: ["moment", "montage", "прохождение", "speedrun", "t0speedrun", "tutorial", "trailer", "skips", "fun", "meme", "other"],
@@ -5,105 +7,40 @@ const CATEGORIES = {
   gameplayer: ["real", "tas"]
 };
 
+// We keep track of the current video we're looking at.
 let currentVideoId = null;
+// This holds the data for the video. We start with an empty template so we can add new tags easily!
 let currentData = { tags: { game: [], video: [], mode: [], gameplayer: [] }, players: [], maps: [], clans: [] };
 
+// Grab the video ID from the YouTube URL (the part after ?v=)
 function getVideoId() {
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get('v');
 }
 
-// --- Thumbnail Badge Logic ---
-let savedVideoIds = new Set();
-
-function fetchSavedVideos(callback) {
-  chrome.storage.local.get(['videos'], (res) => {
-    const vids = res.videos || {};
-    savedVideoIds = new Set(Object.keys(vids));
-    if (callback) callback();
-  });
-}
-
-function markThumbnails() {
-  const links = document.querySelectorAll('a#thumbnail, a[href*="/watch?v="]:has(yt-image), a[href*="/watch?v="]:has(.ytCoreImageHost)');
-  links.forEach(link => {
-    if (!link.href) return;
-    
-    try {
-      const url = new URL(link.href, window.location.href);
-      const vid = url.searchParams.get('v');
-      if (!vid) return;
-
-      const wrapper = link.closest('ytd-thumbnail') || link;
-      const hasBadge = wrapper.querySelector('.teetube-saved-badge');
-      
-      if (savedVideoIds.has(vid)) {
-        if (!hasBadge) {
-          const badge = document.createElement('div');
-          badge.className = 'teetube-saved-badge';
-          badge.innerText = '✓ TeeTube';
-          badge.style.position = 'absolute';
-          badge.style.top = '4px';
-          badge.style.left = '4px';
-          badge.style.backgroundColor = '#2ecc71';
-          badge.style.color = '#fff';
-          badge.style.fontSize = '12px';
-          badge.style.fontWeight = 'bold';
-          badge.style.padding = '2px 6px';
-          badge.style.borderRadius = '4px';
-          badge.style.zIndex = '2147483647';
-          badge.style.pointerEvents = 'none';
-          badge.style.boxShadow = '0 1px 3px rgba(0,0,0,0.8)';
-          
-          const overlays = wrapper.querySelector('#overlays');
-          if (overlays) {
-            overlays.appendChild(badge);
-          } else {
-            const thumbnailLink = wrapper.querySelector('a#thumbnail') || wrapper;
-            thumbnailLink.style.position = 'relative';
-            thumbnailLink.appendChild(badge);
-          }
-        }
-      } else {
-        if (hasBadge) {
-          hasBadge.remove();
-        }
-      }
-    } catch (e) {
-      // ignore invalid URLs
-    }
-  });
-}
-
-let markTimeout = null;
-function debouncedMarkThumbnails() {
-  if (markTimeout) clearTimeout(markTimeout);
-  markTimeout = setTimeout(markThumbnails, 500);
-}
-
-fetchSavedVideos(() => {
-  markThumbnails();
-  const observer = new MutationObserver(debouncedMarkThumbnails);
-  if (document.body) observer.observe(document.body, { childList: true, subtree: true });
-});
-
+// We listen for changes to the local storage, but for the admin panel, we don't need to auto-refresh 
+// right now to avoid overwriting our own typing.
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === 'local' && changes.videos) {
-    savedVideoIds = new Set(Object.keys(changes.videos.newValue || {}));
-    markThumbnails();
-  }
+  // Empty for now!
 });
 
+// This big function scrapes the YouTube page to find metadata about the video.
+// We need the title, author, view count, likes, and upload date.
 function getMetadata() {
+  // Try to find the title element on the page
   const titleEl = document.querySelector('ytd-watch-metadata #title h1 yt-formatted-string') || document.querySelector('h1.title yt-formatted-string');
   const title = titleEl ? titleEl.innerText : 'Unknown Title';
 
+  // Try to find the channel name (author)
   const authorEl = document.querySelector('ytd-watch-metadata #owner yt-formatted-string a') || document.querySelector('#owner-name a');
   const author = authorEl ? authorEl.innerText : 'Unknown Author';
 
+  // Views can be tricky to find because YouTube changes its layout often.
+  // We first check the meta tags.
   const viewsMeta = document.querySelector('meta[itemprop="interactionCount"]');
   let views = viewsMeta ? viewsMeta.content : null;
 
+  // If no meta tag, we search the page text for words like "views" or "просмотр" (Russian)
   if (!views) {
     const spans = document.querySelectorAll('ytd-watch-metadata span');
     for (let span of spans) {
@@ -115,6 +52,7 @@ function getMetadata() {
   }
   if (!views) views = 'Unknown';
 
+  // Do the same for the upload date
   const dateMeta = document.querySelector('meta[itemprop="datePublished"]') || document.querySelector('meta[itemprop="uploadDate"]');
   let date = dateMeta ? dateMeta.content : null;
 
@@ -129,6 +67,7 @@ function getMetadata() {
   }
   if (!date) date = 'Unknown Date';
 
+  // Finding likes is the hardest part. We check the button text and aria-labels for numbers.
   let likes = null;
   const likeBtn = document.querySelector('like-button-view-model button') || document.querySelector('ytd-toggle-button-renderer button');
   if (likeBtn) {
@@ -153,15 +92,22 @@ function getMetadata() {
   }
   if (!likes) likes = 'Unknown Likes';
 
+  // We can always build the thumbnail URL ourselves using the video ID!
   const thumbnail = `https://i.ytimg.com/vi/${currentVideoId}/hqdefault.jpg`;
 
+  // Return everything neatly packed in an object, plus a timestamp so we know when it was tagged.
   return { title, author, views, likes, date, thumbnail, timestamp: Date.now() };
 }
 
+// This saves our edits for the current video into Chrome's local storage.
 function saveData() {
   if (!currentVideoId) return;
+  // Grab the latest metadata from the page
   const metadata = getMetadata();
+  // Merge the metadata with our tags/players/maps
   const videoObj = { ...metadata, ...currentData };
+  
+  // Get all videos, update this one, and save it back
   chrome.storage.local.get(['videos'], (res) => {
     const videos = res.videos || {};
     videos[currentVideoId] = videoObj;

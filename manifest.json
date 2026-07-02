@@ -5,13 +5,18 @@
   "description": "Tag YouTube videos with game categories and track player nicknames.",
   "permissions": [
     "storage",
-    "tabs"
+    "tabs",
+    "unlimitedStorage"
   ],
   "host_permissions": [
     "*://*.youtube.com/*"
   ],
   "action": {
-    "default_title": "Open Dashboard"
+    "default_title": "Open Dashboard",
+    "default_icon": {
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
   },
   "background": {
     "service_worker": "background.js"
@@ -27,7 +32,7 @@
     }
   ],
   "icons": {
-    "48": "icon.png",
-    "128": "icon.png"
+    "48": "icon48.png",
+    "128": "icon128.png"
   }
 }

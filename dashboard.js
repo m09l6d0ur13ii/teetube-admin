@@ -1,3 +1,30 @@
+/* 
+ * TEE TUBE ADMIN - DASHBOARD LOGIC (dashboard.js)
+ * 
+ * Welcome to the Admin Dashboard code! Here is how everything works:
+ * 
+ * 1. THE GOAL:
+ *    This dashboard allows admins to view all videos, manage playlists, check the global database, 
+ *    and most importantly, sync their local edits to GitHub!
+ * 
+ * 2. STARTUP (initDashboard):
+ *    When the dashboard opens, we read all local videos from `chrome.storage.local`.
+ *    We also check the URL for special parameters (like `?player=Nico`) which might have been sent by the tracker banners!
+ *    If there is a filter in the URL, we automatically apply it.
+ * 
+ * 3. SYNCING TO GITHUB (syncBtn click):
+ *    When you click "Sync & Deploy", the script asks for your GitHub Personal Access Token (PAT).
+ *    It grabs the current local database, creates a new commit via the GitHub API, and pushes it to `teetube-db`.
+ *    Finally, it sends a purge request to jsDelivr to clear the old cache so the main website updates faster!
+ * 
+ * 4. LEADERBOARDS & VIDEOS:
+ *    Similar to the main website, we render grids and calculate leaderboards based on the local storage data.
+ *    Admins can also quickly test video links and edit tags directly from here.
+ * 
+ * 5. PLAYLISTS (Playlist Logic):
+ *    Admins can create custom playlists. These are saved in Chrome storage and can be exported as JSON or pushed to GitHub!
+ */
+
 const CATEGORIES = {
   game: ["ddnet", "teeworlds", "ddper"],
   video: ["moment", "montage", "прохождение", "speedrun", "t0speedrun", "tutorial", "trailer", "skips", "fun", "meme", "other"],
