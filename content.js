@@ -42,13 +42,27 @@ function markThumbnails() {
           const badge = document.createElement('div');
           badge.className = 'teetube-saved-badge';
           badge.innerText = '✓ TeeTube';
-          badge.style.zIndex = '1000';
-          wrapper.style.position = 'relative'; 
+          badge.style.position = 'absolute';
+          badge.style.top = '4px';
+          badge.style.left = '4px';
+          badge.style.backgroundColor = '#2ecc71';
+          badge.style.color = '#fff';
+          badge.style.fontSize = '12px';
+          badge.style.fontWeight = 'bold';
+          badge.style.padding = '2px 6px';
+          badge.style.borderRadius = '4px';
+          badge.style.zIndex = '2147483647';
+          badge.style.pointerEvents = 'none';
+          badge.style.boxShadow = '0 1px 3px rgba(0,0,0,0.8)';
           
-          // Append as first child or inside the link so it sits on top of the image
-          const thumbnailLink = wrapper.querySelector('a#thumbnail') || wrapper;
-          thumbnailLink.style.position = 'relative';
-          thumbnailLink.appendChild(badge);
+          const overlays = wrapper.querySelector('#overlays');
+          if (overlays) {
+            overlays.appendChild(badge);
+          } else {
+            const thumbnailLink = wrapper.querySelector('a#thumbnail') || wrapper;
+            thumbnailLink.style.position = 'relative';
+            thumbnailLink.appendChild(badge);
+          }
         }
       } else {
         if (hasBadge) {
