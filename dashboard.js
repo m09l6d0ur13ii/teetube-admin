@@ -58,7 +58,7 @@ function exportDatabase() {
         thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
         tags:      v.tags      || { game: [], video: [], mode: [], gameplayer: [] },
         maps:      v.maps      || [],
-        players:   v.nicknames || [],   // renamed: nicknames → players
+        players:   v.players   || v.nicknames || [],
         clans:     v.clans     || [],
         addedBy:   'local',
         addedAt:   v.timestamp ? new Date(v.timestamp).toISOString() : new Date().toISOString()
@@ -252,7 +252,8 @@ function extractDynamicCategories() {
   availableClans.clear();
   Object.values(allVideos).forEach(v => {
     if (v.maps) v.maps.forEach(m => availableMaps.add(m));
-    if (v.nicknames) v.nicknames.forEach(p => availablePlayers.add(p));
+    const pList = v.players || v.nicknames;
+    if (pList) pList.forEach(p => availablePlayers.add(p));
     if (v.clans) v.clans.forEach(c => availableClans.add(c));
   });
 }
@@ -309,13 +310,14 @@ function createFilterTag(category, tag, container) {
   container.appendChild(el);
 }
 
-function parseRussianDate(dateStr) {
+function parseDateAny(dateStr) {
   if (!dateStr || dateStr === 'Unknown Date') return 0;
   const parts = dateStr.match(/(\d{2})\.(\d{2})\.(\d{4})/);
   if (parts) {
     return new Date(`${parts[3]}-${parts[2]}-${parts[1]}T12:00:00Z`).getTime();
   }
-  return 0;
+  const t = new Date(dateStr).getTime();
+  return isNaN(t) ? 0 : t;
 }
 
 function matchesFilters(videoObj, id) {
@@ -331,7 +333,7 @@ function matchesFilters(videoObj, id) {
   }
 
   if (dateFromFilter || dateToFilter) {
-    const vTime = parseRussianDate(videoObj.date);
+    const vTime = parseDateAny(videoObj.date);
     if (vTime === 0) return false;
     if (dateFromFilter && vTime < dateFromFilter) return false;
     if (dateToFilter && vTime > dateToFilter) return false;
@@ -339,7 +341,7 @@ function matchesFilters(videoObj, id) {
 
   const vTags = videoObj.tags || { game: [], video: [], mode: [], gameplayer: [] };
   const vMaps = videoObj.maps || [];
-  const vPlayers = videoObj.nicknames || [];
+  const vPlayers = videoObj.players || videoObj.nicknames || [];
   const vClans = videoObj.clans || [];
 
   for (const cat in activeFilters) {
@@ -395,10 +397,10 @@ function renderVideos() {
     } else if (currentSort === 'likes') {
       return parseNumber(vB.likes) - parseNumber(vA.likes);
     } else if (currentSort === 'oldest') {
-      return parseRussianDate(vA.date) - parseRussianDate(vB.date);
+      return parseDateAny(vA.date) - parseDateAny(vB.date);
     } else {
       // newest (default)
-      return parseRussianDate(vB.date) - parseRussianDate(vA.date);
+      return parseDateAny(vB.date) - parseDateAny(vA.date);
     }
   });
 
@@ -410,6 +412,14 @@ function renderVideos() {
     }
   }
 
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
   filtered.forEach(([id, v]) => {
     count++;
     
@@ -420,24 +430,25 @@ function renderVideos() {
     ['game', 'video', 'mode', 'gameplayer'].forEach(cat => {
       if (v.tags && v.tags[cat]) {
         v.tags[cat].forEach(t => {
-          tagsHtml += `<span class="card-tag ${cat}" data-cat="${cat}" data-tag="${t.replace(/"/g, '&quot;')}" title="Filter by ${t}">${t}</span>`;
+          tagsHtml += `<span class="card-tag ${cat}" data-cat="${cat}" data-tag="${esc(t)}" title="Filter by ${esc(t)}">${esc(t)}</span>`;
         });
       }
     });
 
     if (v.maps) {
       v.maps.forEach(m => {
-        tagsHtml += `<span class="card-tag map" data-cat="map" data-tag="${m.replace(/"/g, '&quot;')}" title="Filter by ${m}">🗺️ ${m}</span>`;
+        tagsHtml += `<span class="card-tag map" data-cat="map" data-tag="${esc(m)}" title="Filter by ${esc(m)}">🗺️ ${esc(m)}</span>`;
       });
     }
     if (v.clans) {
       v.clans.forEach(c => {
-        tagsHtml += `<span class="card-tag clan" data-cat="clan" data-tag="${c.replace(/"/g, '&quot;')}" title="Filter by ${c}">🛡️ ${c}</span>`;
+        tagsHtml += `<span class="card-tag clan" data-cat="clan" data-tag="${esc(c)}" title="Filter by ${esc(c)}">🛡️ ${esc(c)}</span>`;
       });
     }
-    if (v.nicknames) {
-      v.nicknames.forEach(p => {
-        tagsHtml += `<span class="card-tag player" data-cat="player" data-tag="${p.replace(/"/g, '&quot;')}" title="Filter by ${p}">👤 ${p}</span>`;
+    const pList = v.players || v.nicknames;
+    if (pList) {
+      pList.forEach(p => {
+        tagsHtml += `<span class="card-tag player" data-cat="player" data-tag="${esc(p)}" title="Filter by ${esc(p)}">👤 ${esc(p)}</span>`;
       });
     }
 
@@ -451,13 +462,13 @@ function renderVideos() {
 
     card.innerHTML = `
       <div class="card-link" style="display:flex; flex-direction:column; flex:1;">
-        <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="thumbnail-wrapper" style="text-decoration:none; color:inherit; display:block;">
-          <img src="${v.thumbnail}" alt="Thumbnail" class="thumbnail" loading="lazy">
+        <a href="https://www.youtube.com/watch?v=${esc(id)}" target="_blank" class="thumbnail-wrapper" style="text-decoration:none; color:inherit; display:block;">
+          <img src="${esc(v.thumbnail)}" alt="Thumbnail" class="thumbnail" loading="lazy">
         </a>
         <div class="card-content">
-          <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-title" style="text-decoration:none; color:inherit; display:block; margin-bottom: 4px;">${v.title}</a>
-          <div class="video-author" style="cursor: pointer;" title="Search author" data-author="${v.author.replace(/"/g, '&quot;')}">${v.author}</div>
-          <div class="video-meta">👁 ${v.views || 'Unknown'} &nbsp;&nbsp; 👍 ${v.likes || 'Unknown'}${dateDisplay}</div>
+          <a href="https://www.youtube.com/watch?v=${esc(id)}" target="_blank" class="video-title" style="text-decoration:none; color:inherit; display:block; margin-bottom: 4px;">${esc(v.title)}</a>
+          <div class="video-author" style="cursor: pointer;" title="Search author" data-author="${esc(v.author)}">${esc(v.author)}</div>
+          <div class="video-meta">👁 ${esc(v.views || 'Unknown')} &nbsp;&nbsp; 👍 ${esc(v.likes || 'Unknown')}${dateDisplay}</div>
           <div class="card-tags">${tagsHtml}</div>
         </div>
       </div>
@@ -712,8 +723,9 @@ function renderLeaderboardsTab() {
   Object.values(allVideos).forEach(v => {
     const views = parseNumber(v.views);
     
-    if (v.nicknames) {
-      v.nicknames.forEach(p => {
+    const pList = v.players || v.nicknames;
+    if (pList) {
+      pList.forEach(p => {
         stats.playersByVideos[p] = (stats.playersByVideos[p] || 0) + 1;
         stats.playersByViews[p] = (stats.playersByViews[p] || 0) + views;
       });

@@ -19,10 +19,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.youtube.com/*", 
-        "*://*.ddnet.org/*", "*://ddnet.org/*",
-        "*://*.ddstats.tw/*", "*://ddstats.tw/*",
-        "*://*.teerank.io/*", "*://teerank.io/*"
+        "*://*.youtube.com/*"
       ],
       "css": ["content.css"],
       "js": ["content.js"],
