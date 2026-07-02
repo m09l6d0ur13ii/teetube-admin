@@ -34,40 +34,10 @@ function markThumbnails() {
       const vid = url.searchParams.get('v');
       if (!vid) return;
 
-      const wrapper = link.closest('ytd-thumbnail') || link;
-      const hasBadge = wrapper.querySelector('.teetube-saved-badge');
-      
       if (savedVideoIds.has(vid)) {
-        if (!hasBadge) {
-          const badge = document.createElement('div');
-          badge.className = 'teetube-saved-badge';
-          badge.innerText = '✓ TeeTube';
-          badge.style.position = 'absolute';
-          badge.style.top = '4px';
-          badge.style.left = '4px';
-          badge.style.backgroundColor = '#2ecc71';
-          badge.style.color = '#fff';
-          badge.style.fontSize = '12px';
-          badge.style.fontWeight = 'bold';
-          badge.style.padding = '2px 6px';
-          badge.style.borderRadius = '4px';
-          badge.style.zIndex = '2147483647';
-          badge.style.pointerEvents = 'none';
-          badge.style.boxShadow = '0 1px 3px rgba(0,0,0,0.8)';
-          
-          const overlays = wrapper.querySelector('#overlays');
-          if (overlays) {
-            overlays.appendChild(badge);
-          } else {
-            const thumbnailLink = wrapper.querySelector('a#thumbnail') || wrapper;
-            thumbnailLink.style.position = 'relative';
-            thumbnailLink.appendChild(badge);
-          }
-        }
+        link.classList.add('teetube-saved-thumbnail');
       } else {
-        if (hasBadge) {
-          hasBadge.remove();
-        }
+        link.classList.remove('teetube-saved-thumbnail');
       }
     } catch (e) {
       // ignore invalid URLs
