@@ -18,6 +18,7 @@
       <button class="nav-tab active" data-tab="videos-tab">📺 All Videos</button>
       <button class="nav-tab" data-tab="playlists-tab">📁 Playlists</button>
       <button class="nav-tab" data-tab="leaderboards-tab">🏆 Leaderboards</button>
+      <button class="nav-tab" data-tab="admin-tab" style="margin-top: auto; border-top: 1px solid #333;">⚙️ Admin Panel</button>
     </nav>
 
     <div class="filters" id="sidebar-filters">
@@ -117,6 +118,37 @@
       
       <div class="leaderboards-container" id="leaderboards-container">
         <!-- Leaderboards will go here -->
+      </div>
+    </div>
+
+    <div id="admin-tab" class="tab-content" style="display: none;">
+      <header>
+        <h1>⚙️ Admin Panel</h1>
+      </header>
+      
+      <div class="admin-container" style="max-width: 600px; padding: 20px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333; margin-top: 20px;">
+        <h3 style="margin-top: 0;">GitHub API Sync</h3>
+        <p style="color: #aaa; font-size: 13px; margin-bottom: 20px;">
+          Synchronize your local browser database with the global <code>teetube-db</code> repository on GitHub.
+        </p>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 500;">GitHub Personal Access Token</label>
+          <div style="display: flex; gap: 10px;">
+            <input type="password" id="github-token-input" placeholder="ghp_xxxxxxxxxxxx" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; outline: none;">
+            <button id="save-token-btn" class="cta-btn" style="padding: 10px 16px; border-radius: 6px; border: none; background: #6c63ff; color: white; cursor: pointer; font-weight: 600;">Save</button>
+          </div>
+          <p id="token-status" style="font-size: 12px; margin-top: 6px; color: #aaa;"></p>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button id="sync-github-btn" class="cta-btn" style="padding: 12px 20px; border-radius: 6px; border: none; background: #2ecc71; color: #000; cursor: pointer; font-weight: 700; font-size: 15px; opacity: 0.5; pointer-events: none;">
+            ☁️ Sync to GitHub
+          </button>
+          <div id="sync-status" style="font-size: 13px; padding: 10px; border-radius: 6px; display: none;"></div>
+        </div>
       </div>
     </div>
   </div>

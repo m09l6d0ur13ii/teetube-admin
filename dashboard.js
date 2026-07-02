@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initModal();
   initSearch();
+  initAdminPanel();
   loadData();
 
   const exportBtn = document.getElementById('export-db-btn');
@@ -761,4 +762,139 @@ function renderLeaderboardsTab() {
   createTable('Rank (Views)', stats.playersByViews, v => `${formatStatNumber(v)} views`, true);
   createTable('Top Maps', stats.maps, v => `${v} runs`);
   createTable('Top Clans', stats.clans, v => `${v} pts`);
+}
+
+function initAdminPanel() {
+  const tokenInput = document.getElementById('github-token-input');
+  const saveBtn = document.getElementById('save-token-btn');
+  const syncBtn = document.getElementById('sync-github-btn');
+  const tokenStatus = document.getElementById('token-status');
+  const syncStatus = document.getElementById('sync-status');
+
+  if (!tokenInput || !saveBtn || !syncBtn) return;
+
+  // Load token
+  chrome.storage.local.get(['github_token'], (res) => {
+    if (res.github_token) {
+      tokenInput.value = res.github_token;
+      tokenStatus.innerText = 'Token loaded from storage.';
+      syncBtn.style.opacity = '1';
+      syncBtn.style.pointerEvents = 'auto';
+    }
+  });
+
+  saveBtn.addEventListener('click', () => {
+    const val = tokenInput.value.trim();
+    if (val) {
+      chrome.storage.local.set({ github_token: val }, () => {
+        tokenStatus.innerText = 'Token saved successfully! ✅';
+        syncBtn.style.opacity = '1';
+        syncBtn.style.pointerEvents = 'auto';
+        setTimeout(() => tokenStatus.innerText = '', 3000);
+      });
+    } else {
+      chrome.storage.local.remove(['github_token'], () => {
+        tokenStatus.innerText = 'Token removed.';
+        syncBtn.style.opacity = '0.5';
+        syncBtn.style.pointerEvents = 'none';
+        setTimeout(() => tokenStatus.innerText = '', 3000);
+      });
+    }
+  });
+
+  syncBtn.addEventListener('click', async () => {
+    const token = tokenInput.value.trim();
+    if (!token) return;
+
+    syncStatus.style.display = 'block';
+    syncStatus.style.background = 'rgba(241,196,15,0.2)';
+    syncStatus.style.color = '#f1c40f';
+    syncStatus.innerText = '⏳ Fetching latest database from GitHub...';
+    syncBtn.disabled = true;
+
+    try {
+      // 1. Get current file and sha
+      const repoPath = 'm09l6d0ur13ii/teetube-db';
+      const filePath = 'database.json';
+      
+      const getRes = await fetch(`https://api.github.com/repos/${repoPath}/contents/${filePath}`, {
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+
+      if (!getRes.ok) throw new Error(`GitHub API Error: ${getRes.status} ${getRes.statusText}`);
+      
+      const getJson = await getRes.json();
+      const sha = getJson.sha;
+      
+      // Decode content (base64)
+      let remoteDb;
+      try {
+        const decodedContent = decodeURIComponent(escape(atob(getJson.content)));
+        remoteDb = JSON.parse(decodedContent);
+      } catch (e) {
+        throw new Error('Failed to parse remote database.json');
+      }
+
+      // 2. Merge local videos into remoteDb
+      let newCount = 0;
+      Object.entries(allVideos).forEach(([id, v]) => {
+        if (!remoteDb.videos[id]) {
+          newCount++;
+        }
+        remoteDb.videos[id] = {
+          title:     v.title     || 'Unknown Title',
+          author:    v.author    || 'Unknown Author',
+          views:     v.views     || '0',
+          likes:     v.likes     || '0',
+          date:      v.date      || '',
+          thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+          tags:      v.tags      || { game: [], video: [], mode: [], gameplayer: [] },
+          maps:      v.maps      || [],
+          players:   v.nicknames || [],
+          clans:     v.clans     || [],
+          addedBy:   'local-sync',
+          addedAt:   v.timestamp ? new Date(v.timestamp).toISOString() : new Date().toISOString()
+        };
+      });
+
+      remoteDb.updatedAt = new Date().toISOString();
+      remoteDb.updatedBy = 'Admin-Panel-Sync';
+
+      syncStatus.innerText = `⏳ Pushing ${Object.keys(allVideos).length} videos (merged with remote) to GitHub...`;
+
+      // Encode content back to base64 safely handling UTF-8
+      const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(remoteDb, null, 2))));
+
+      // 3. Put new file content
+      const putRes = await fetch(`https://api.github.com/repos/${repoPath}/contents/${filePath}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: `Sync ${newCount} new videos via TeeTube Admin Panel`,
+          content: updatedContent,
+          sha: sha
+        })
+      });
+
+      if (!putRes.ok) throw new Error(`GitHub API Error: ${putRes.status} ${putRes.statusText}`);
+
+      syncStatus.style.background = 'rgba(46,204,113,0.2)';
+      syncStatus.style.color = '#2ecc71';
+      syncStatus.innerText = '✅ Sync successful! Database updated on GitHub.';
+
+    } catch (e) {
+      syncStatus.style.background = 'rgba(231,76,60,0.2)';
+      syncStatus.style.color = '#e74c3c';
+      syncStatus.innerText = `❌ Error: ${e.message}`;
+    } finally {
+      syncBtn.disabled = false;
+    }
+  });
 }
