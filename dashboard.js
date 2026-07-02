@@ -885,6 +885,13 @@ function initAdminPanel() {
 
       if (!putRes.ok) throw new Error(`GitHub API Error: ${putRes.status} ${putRes.statusText}`);
 
+      syncStatus.innerText = '♻️ Purging global CDN cache...';
+      try {
+        await fetch(`https://purge.jsdelivr.net/gh/${repoPath}@main/${filePath}`);
+      } catch (purgeErr) {
+        console.warn('CDN Purge failed, but DB updated', purgeErr);
+      }
+
       syncStatus.style.background = 'rgba(46,204,113,0.2)';
       syncStatus.style.color = '#2ecc71';
       syncStatus.innerText = '✅ Sync successful! Database updated on GitHub.';
