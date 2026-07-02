@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeeTube Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="logo">
+      <h2>TeeTube</h2>
+      <p>Tracker Dashboard</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-tab active" data-tab="videos-tab">📺 All Videos</button>
+      <button class="nav-tab" data-tab="playlists-tab">📁 Playlists</button>
+      <button class="nav-tab" data-tab="leaderboards-tab">🏆 Leaderboards</button>
+    </nav>
+
+    <div class="filters" id="sidebar-filters">
+      <div class="filter-group">
+        <h4>Sort & Date</h4>
+        <select id="sort-select" style="width: 100%; padding: 6px; margin-bottom: 8px; background: #1e1e1e; color: white; border: 1px solid #333; border-radius: 4px; outline: none;">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="views">Most Views</option>
+          <option value="likes">Most Likes</option>
+        </select>
+        <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+          <input type="date" id="date-from" style="flex: 1; padding: 4px; background: #1e1e1e; color: white; border: 1px solid #333; border-radius: 4px; outline: none; font-size: 12px;" title="Date From">
+          <input type="date" id="date-to" style="flex: 1; padding: 4px; background: #1e1e1e; color: white; border: 1px solid #333; border-radius: 4px; outline: none; font-size: 12px;" title="Date To">
+        </div>
+      </div>
+      
+      <div class="filter-group">
+        <h4>Game</h4>
+        <div id="filter-game" class="filter-tags"></div>
+      </div>
+
+      <div class="filter-group">
+        <h4>Video Type</h4>
+        <div id="filter-video" class="filter-tags"></div>
+      </div>
+
+      <div class="filter-group">
+        <h4>Mode</h4>
+        <div id="filter-mode" class="filter-tags"></div>
+      </div>
+
+      <div class="filter-group">
+        <h4>Player Type</h4>
+        <div id="filter-gameplayer" class="filter-tags"></div>
+      </div>
+
+
+
+      <div class="filter-group">
+        <h4>Map</h4>
+        <input type="text" id="search-filter-map" class="filter-search-input" placeholder="Search map..." style="display:none;">
+        <div id="filter-map" class="filter-tags"></div>
+      </div>
+
+      <div class="filter-group">
+        <h4>Player</h4>
+        <input type="text" id="search-filter-player" class="filter-search-input" placeholder="Search player..." style="display:none;">
+        <div id="filter-player" class="filter-tags"></div>
+      </div>
+
+      <div class="filter-group">
+        <h4>Clan</h4>
+        <input type="text" id="search-filter-clan" class="filter-search-input" placeholder="Search clan..." style="display:none;">
+        <div id="filter-clan" class="filter-tags"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div id="videos-tab" class="tab-content active">
+      <header style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <h1 style="margin: 0;">Saved Videos</h1>
+          <div class="stats" id="total-stats" style="margin: 0;">0 videos</div>
+        </div>
+        <input type="text" id="main-search-input" placeholder="🔍 Search by title or author..." style="padding: 8px 16px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: white; width: 300px; outline: none;">
+      </header>
+
+      <div id="active-playlist-banner" class="active-playlist-banner" style="display: none;">
+        <span>Viewing Playlist: <strong id="active-playlist-name"></strong></span>
+        <button id="clear-playlist-btn" class="clear-btn">Clear Filter ✕</button>
+      </div>
+
+      <div class="grid" id="video-grid">
+        <!-- Videos will be injected here -->
+      </div>
+    </div>
+
+    <div id="playlists-tab" class="tab-content">
+      <header>
+        <h1>Playlists</h1>
+      </header>
+      
+      <div class="playlists-container">
+        <!-- Playlists will go here -->
+      </div>
+    </div>
+
+    <div id="leaderboards-tab" class="tab-content">
+      <header>
+        <h1>Global Ranks</h1>
+      </header>
+      
+      <div class="leaderboards-container" id="leaderboards-container">
+        <!-- Leaderboards will go here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Playlists -->
+  <div id="playlist-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add to Playlist</h3>
+        <button class="modal-close" id="close-modal-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="create-playlist-row">
+          <input type="text" id="new-playlist-input" placeholder="Create new playlist...">
+          <button id="create-playlist-btn">Create</button>
+        </div>
+        <div id="modal-playlists-list" class="modal-playlists-list">
+          <!-- Playlist checkboxes go here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

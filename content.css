@@ -1,0 +1,127 @@
+#ddnettube-panel {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: var(--yt-spec-badge-chip-background, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  color: var(--yt-spec-text-primary, #fff);
+  font-family: "Roboto", "Arial", sans-serif;
+  font-size: 14px;
+  border: 1px solid var(--yt-spec-10-percent-layer, rgba(255, 255, 255, 0.2));
+}
+
+.ddnettube-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ddnettube-row:last-child {
+  margin-bottom: 0;
+}
+
+.ddnettube-label {
+  font-weight: 500;
+  margin-right: 8px;
+  min-width: 60px;
+  color: var(--yt-spec-text-secondary, #aaa);
+}
+
+.ddnettube-tag {
+  background: var(--yt-spec-button-chip-background-hover, rgba(255,255,255,0.2));
+  border: 1px solid transparent;
+  padding: 4px 10px;
+  border-radius: 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.ddnettube-btn:hover {
+  background: #2980b9;
+}
+
+.teetube-saved-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background-color: #2ecc71;
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 9999;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+
+.ddnettube-tag:hover {
+  background: var(--yt-spec-10-percent-layer, rgba(255,255,255,0.3));
+}
+
+.ddnettube-tag.active {
+  background: #3ea6ff;
+  color: #0f0f0f;
+  font-weight: 500;
+}
+
+.ddnettube-text-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--yt-spec-10-percent-layer, rgba(255,255,255,0.2));
+  color: var(--yt-spec-text-primary, #fff);
+  padding: 4px;
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+.ddnettube-text-input:focus {
+  border-bottom-color: #3ea6ff;
+}
+
+.ddnettube-nickname {
+  background: rgba(62, 166, 255, 0.2);
+  color: #3ea6ff;
+  border: 1px solid rgba(62, 166, 255, 0.5);
+  padding: 4px 10px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ddnettube-nickname-remove {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.ddnettube-nickname-remove:hover {
+  color: #fff;
+}
+
+.ddnettube-map {
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.5);
+  padding: 4px 10px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ddnettube-clan {
+  background: rgba(230, 126, 34, 0.2);
+  color: #e67e22;
+  border: 1px solid rgba(230, 126, 34, 0.5);
+  padding: 4px 10px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
