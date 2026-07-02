@@ -34,7 +34,7 @@ function markThumbnails() {
       const vid = url.searchParams.get('v');
       if (!vid) return;
 
-      const wrapper = link.closest('ytd-thumbnail, ytd-compact-video-renderer, yt-lockup-view-model, .ytd-rich-grid-media') || link;
+      const wrapper = link.closest('ytd-thumbnail') || link;
       const hasBadge = wrapper.querySelector('.teetube-saved-badge');
       
       if (savedVideoIds.has(vid)) {
@@ -42,8 +42,13 @@ function markThumbnails() {
           const badge = document.createElement('div');
           badge.className = 'teetube-saved-badge';
           badge.innerText = '✓ TeeTube';
+          badge.style.zIndex = '1000';
           wrapper.style.position = 'relative'; 
-          wrapper.appendChild(badge);
+          
+          // Append as first child or inside the link so it sits on top of the image
+          const thumbnailLink = wrapper.querySelector('a#thumbnail') || wrapper;
+          thumbnailLink.style.position = 'relative';
+          thumbnailLink.appendChild(badge);
         }
       } else {
         if (hasBadge) {
