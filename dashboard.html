@@ -84,7 +84,10 @@
           <h1 style="margin: 0;">Saved Videos</h1>
           <div class="stats" id="total-stats" style="margin: 0;">0 videos</div>
         </div>
-        <input type="text" id="main-search-input" placeholder="🔍 Search by title or author..." style="padding: 8px 16px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: white; width: 300px; outline: none;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="text" id="main-search-input" placeholder="🔍 Search by title or author..." style="padding: 8px 16px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: white; width: 300px; outline: none;">
+          <button id="export-db-btn" title="Export database.json for teetube-db" style="padding: 8px 14px; border-radius: 8px; border: 1px solid #444; background: #1e1e1e; color: #aaa; cursor: pointer; font-size: 13px; white-space: nowrap;">⬇️ Export DB</button>
+        </div>
       </header>
 
       <div id="active-playlist-banner" class="active-playlist-banner" style="display: none;">

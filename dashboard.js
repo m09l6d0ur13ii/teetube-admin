@@ -34,7 +34,60 @@ document.addEventListener('DOMContentLoaded', () => {
   initModal();
   initSearch();
   loadData();
+
+  const exportBtn = document.getElementById('export-db-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportDatabase);
+  }
 });
+
+function exportDatabase() {
+  chrome.storage.local.get(['videos'], (res) => {
+    const localVideos = res.videos || {};
+
+    // Convert to teetube-db format
+    const dbVideos = {};
+    Object.entries(localVideos).forEach(([id, v]) => {
+      dbVideos[id] = {
+        title:     v.title     || 'Unknown Title',
+        author:    v.author    || 'Unknown Author',
+        views:     v.views     || '0',
+        likes:     v.likes     || '0',
+        date:      v.date      || '',
+        thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+        tags:      v.tags      || { game: [], video: [], mode: [], gameplayer: [] },
+        maps:      v.maps      || [],
+        players:   v.nicknames || [],   // renamed: nicknames → players
+        clans:     v.clans     || [],
+        addedBy:   'local',
+        addedAt:   v.timestamp ? new Date(v.timestamp).toISOString() : new Date().toISOString()
+      };
+    });
+
+    const dbJson = {
+      version:   1,
+      updatedAt: new Date().toISOString(),
+      updatedBy: 'local-export',
+      videos:    dbVideos,
+      moderators: ['m09l6d0ur13ii']
+    };
+
+    const blob = new Blob([JSON.stringify(dbJson, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'database.json';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    const btn = document.getElementById('export-db-btn');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = '✅ Exported!';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    }
+  });
+}
 
 function initSearch() {
   const mainSearch = document.getElementById('main-search-input');
