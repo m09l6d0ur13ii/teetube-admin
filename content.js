@@ -24,6 +24,15 @@ function esc(str) {
     .replace(/"/g, '&quot;');
 }
 
+function parseNum(str) {
+  if (!str) return 0;
+  let s = str.toString().toLowerCase();
+  let multi = 1;
+  if (s.includes('k') || s.includes('тыс')) { multi = 1000; s = s.replace(',', '.'); }
+  if (s.includes('m') || s.includes('млн')) { multi = 1000000; s = s.replace(',', '.'); }
+  return Math.floor((parseFloat(s.replace(/[^\d.]/g, '')) || 0) * multi);
+}
+
 // Grab the video ID from the YouTube URL (the part after ?v=)
 function getVideoId() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -36,7 +45,9 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local' && changes.videos) {
     if (typeof allVideosCache !== 'undefined') {
       allVideosCache = changes.videos.newValue || {};
+      if (typeof updateAuthorCounts === 'function') updateAuthorCounts();
       if (typeof injectThumbnails === 'function') injectThumbnails();
+      if (typeof injectChannelBadges === 'function') injectChannelBadges();
     }
   }
 });
@@ -113,21 +124,35 @@ function getMetadata() {
   const thumbnail = `https://i.ytimg.com/vi/${currentVideoId}/hqdefault.jpg`;
 
   // Return everything neatly packed in an object, plus a timestamp so we know when it was tagged.
-  return { title, author, views, likes, date, thumbnail, timestamp: Date.now() };
+  return { title, author, views: parseNum(views), likes: parseNum(likes), date, thumbnail, timestamp: Date.now() };
+}
+
+function isVideoEmpty(data) {
+  const hasTags = Object.values(data.tags || {}).some(arr => arr.length > 0);
+  const hasPlayers = (data.players || []).length > 0;
+  const hasMaps = (data.maps || []).length > 0;
+  const hasClans = (data.clans || []).length > 0;
+  return !hasTags && !hasPlayers && !hasMaps && !hasClans;
 }
 
 // This saves our edits for the current video into Chrome's local storage.
 function saveData() {
   if (!currentVideoId) return;
-  // Grab the latest metadata from the page
-  const metadata = getMetadata();
-  // Merge the metadata with our tags/players/maps
-  const videoObj = { ...metadata, ...currentData };
   
-  // Get all videos, update this one, and save it back
   chrome.storage.local.get(['videos'], (res) => {
     const videos = res.videos || {};
-    videos[currentVideoId] = videoObj;
+    
+    if (isVideoEmpty(currentData)) {
+      // If the video has no tags, players, maps, or clans left, remove it!
+      delete videos[currentVideoId];
+    } else {
+      // Grab the latest metadata from the page
+      const metadata = getMetadata();
+      // Merge the metadata with our tags/players/maps
+      const videoObj = { ...metadata, ...currentData };
+      videos[currentVideoId] = videoObj;
+    }
+    
     chrome.storage.local.set({ videos });
   });
 }
@@ -435,6 +460,13 @@ function init() {
 }
 
 // --- YouTube Integration ---
+if (!document.getElementById('ddnettube-admin-active')) {
+  const marker = document.createElement('div');
+  marker.id = 'ddnettube-admin-active';
+  marker.style.display = 'none';
+  document.body.appendChild(marker);
+}
+
 // Observe URL changes (YouTube SPA)
 let lastUrl = location.href;
 if (window.location.hostname.includes('youtube.com')) {
@@ -448,6 +480,107 @@ if (window.location.hostname.includes('youtube.com')) {
 
   // Initial run
   setTimeout(init, 1500);
+}
+
+// --- Thumbnail Badges ---
+let allVideosCache = {};
+let authorCounts = {};
+
+function updateAuthorCounts() {
+  authorCounts = {};
+  Object.values(allVideosCache).forEach(v => {
+    if (v.author) {
+      const author = v.author.trim().toLowerCase();
+      authorCounts[author] = (authorCounts[author] || 0) + 1;
+    }
+  });
+}
+
+chrome.storage.local.get(['videos'], (res) => {
+  allVideosCache = res.videos || {};
+  updateAuthorCounts();
+  if (window.location.hostname.includes('youtube.com')) {
+    injectThumbnails();
+    injectChannelBadges();
+  }
+});
+
+function injectThumbnails() {
+  const links = document.querySelectorAll('a[href*="/watch?v="]');
+  links.forEach(link => {
+    try {
+      const url = new URL(link.href);
+      const vid = url.searchParams.get('v');
+      if (!vid) return;
+
+      const hasImage = link.querySelector('img, yt-image, yt-thumbnail-view-model');
+      const isThumbnail = link.id === 'thumbnail' || (typeof link.className === 'string' && (link.className.includes('thumbnail') || link.className.includes('ytLockupViewModelContentImage')));
+      
+      if (!hasImage && !isThumbnail) {
+        const wrongBadge = link.querySelector('.teetube-saved-badge');
+        if (wrongBadge) wrongBadge.remove();
+        return;
+      }
+
+      const existingBadge = link.querySelector('.teetube-saved-badge');
+      
+      if (allVideosCache[vid]) {
+         if (!existingBadge) {
+             const badge = document.createElement('div');
+             badge.className = 'teetube-saved-badge';
+             badge.innerHTML = '✔ teetube';
+             const thumb = link.querySelector('yt-thumbnail-view-model') || link.querySelector('ytd-thumbnail') || link;
+             thumb.appendChild(badge);
+         }
+      } else {
+         if (existingBadge) existingBadge.remove();
+      }
+    } catch (e) {}
+  });
+}
+
+function injectChannelBadges() {
+  const channelEls = document.querySelectorAll(`
+    ytd-channel-name yt-formatted-string#text,
+    #channel-name yt-formatted-string#text,
+    yt-page-header-view-model h1.dynamicTextViewModelH1 span,
+    ytd-video-meta-block .ytContentMetadataViewModelMetadataText,
+    ytd-channel-name .ytContentMetadataViewModelMetadataText,
+    #channel-name .ytContentMetadataViewModelMetadataText
+  `);
+  
+  channelEls.forEach(el => {
+    try {
+      const author = el.innerText.trim();
+      if (!author) return;
+      const lowerAuthor = author.toLowerCase();
+      
+      const count = authorCounts[lowerAuthor];
+      if (!count) {
+        const wrongBadge = el.querySelector('.teetube-channel-badge');
+        if (wrongBadge) wrongBadge.remove();
+        return;
+      }
+
+      let badge = el.querySelector('.teetube-channel-badge');
+      
+      let badgeText = `✔ teetube (${count} saved)`;
+
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'teetube-channel-badge';
+        el.appendChild(badge);
+      }
+      badge.innerHTML = badgeText;
+    } catch (e) {}
+  });
+}
+
+if (window.location.hostname.includes('youtube.com')) {
+  setInterval(() => {
+    injectThumbnails();
+    injectChannelBadges();
+  }, 1500);
 }
 
 // --- End of content.js ---

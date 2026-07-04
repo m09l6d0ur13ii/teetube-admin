@@ -10,6 +10,15 @@
 
 let allVideos = {};
 
+function parseNum(str) {
+  if (!str) return 0;
+  let s = str.toString().toLowerCase();
+  let multi = 1;
+  if (s.includes('k') || s.includes('тыс')) { multi = 1000; s = s.replace(',', '.'); }
+  if (s.includes('m') || s.includes('млн')) { multi = 1000000; s = s.replace(',', '.'); }
+  return Math.floor((parseFloat(s.replace(/[^\d.]/g, '')) || 0) * multi);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initAdminPanel();
@@ -31,8 +40,8 @@ function exportDatabase() {
       dbVideos[id] = {
         title: v.title || 'Unknown Title',
         author: v.author || 'Unknown Author',
-        views: v.views || '0',
-        likes: v.likes || '0',
+        views: parseNum(v.views),
+        likes: parseNum(v.likes),
         date: v.date || '',
         thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
         tags: v.tags || { game: [], video: [], mode: [], gameplayer: [] },
@@ -353,8 +362,8 @@ function initAdminPanel() {
         remoteDb.videos[id] = {
           title: v.title || 'Unknown Title',
           author: v.author || 'Unknown Author',
-          views: v.views || '0',
-          likes: v.likes || '0',
+          views: parseNum(v.views),
+          likes: parseNum(v.likes),
           date: v.date || '',
           thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
           tags: v.tags || { game: [], video: [], mode: [], gameplayer: [] },

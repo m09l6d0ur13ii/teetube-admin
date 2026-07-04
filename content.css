@@ -52,7 +52,6 @@
   font-weight: bold;
   padding: 3px 6px;
   border-radius: 4px;
-  z-index: 9999;
   box-shadow: 0 1px 3px rgba(0,0,0,0.5);
   pointer-events: none;
   display: flex;
@@ -158,4 +157,17 @@
 
 .ddnettube-autocomplete-item:hover {
   background: var(--yt-spec-10-percent-layer, rgba(255,255,255,0.3));
+}
+
+.teetube-channel-badge {
+  background-color: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+  border: 1px solid #2ecc71;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 8px;
+  display: inline-block;
+  white-space: nowrap;
 }
