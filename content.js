@@ -2,15 +2,27 @@
 // If you want to add a new tag category, put it here!
 const CATEGORIES = {
   game: ["ddnet", "teeworlds", "ddper"],
-  video: ["moment", "montage", "прохождение", "speedrun", "t0speedrun", "tutorial", "trailer", "skips", "fun", "meme", "other"],
-  mode: ["ddrace", "ctf", "dm", "race", "fng", "gores", "block", "other mods"],
-  gameplayer: ["real", "tas"]
+  video: ["moment", "montage", "playthrough", "speedrun", "t0speedrun", "tutorial", "trailer", "skips", "animation", "gameplay", "tournament", "match", "podcast", "fun", "meme", "other"],
+  mode: ["DDRace", "Gores", "fng", "F-DDrace", "Race", "Block", "BOMB", "CTF", "TB", "TeeWare", "InfClass", "Monster", "zCatch", "Foot", "DM", "Soup", "AXRace", "Sheep", "Battle", "Training", "other mods"],
+  gameplayer: ["real", "tas", "dummy"],
+  lang: ["ru", "en", "zh", "other"]
 };
 
 // We keep track of the current video we're looking at.
 let currentVideoId = null;
 // This holds the data for the video. We start with an empty template so we can add new tags easily!
-let currentData = { tags: { game: [], video: [], mode: [], gameplayer: [] }, players: [], maps: [], clans: [] };
+let currentData = { tags: { game: [], video: [], mode: [], gameplayer: [], lang: [] }, players: [], maps: [], clans: [] };
+let cachedMaps = [];
+
+// Helper to prevent XSS
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 // Grab the video ID from the YouTube URL (the part after ?v=)
 function getVideoId() {
@@ -21,7 +33,12 @@ function getVideoId() {
 // We listen for changes to the local storage, but for the admin panel, we don't need to auto-refresh 
 // right now to avoid overwriting our own typing.
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  // Empty for now!
+  if (namespace === 'local' && changes.videos) {
+    if (typeof allVideosCache !== 'undefined') {
+      allVideosCache = changes.videos.newValue || {};
+      if (typeof injectThumbnails === 'function') injectThumbnails();
+    }
+  }
 });
 
 // This big function scrapes the YouTube page to find metadata about the video.
@@ -182,6 +199,11 @@ function removeClan(clanName) {
 }
 
 function renderPanel() {
+  const vid = currentVideoId;
+  if (!vid) return;
+  const readOnlyPanel = document.getElementById('ddnettube-readonly-panel');
+  if (readOnlyPanel) readOnlyPanel.remove();
+
   let panel = document.getElementById('ddnettube-panel');
   if (!panel) {
     panel = document.createElement('div');
@@ -232,7 +254,7 @@ function renderPanel() {
   currentData.players.forEach(nick => {
     const nickEl = document.createElement('div');
     nickEl.className = 'ddnettube-nickname';
-    nickEl.innerHTML = `<span>${nick}</span><span class="ddnettube-nickname-remove">×</span>`;
+    nickEl.innerHTML = `<span>${esc(nick)}</span><span class="ddnettube-nickname-remove">×</span>`;
     nickEl.querySelector('.ddnettube-nickname-remove').onclick = () => removePlayer(nick);
     nickRow.appendChild(nickEl);
   });
@@ -261,20 +283,72 @@ function renderPanel() {
   currentData.maps.forEach(mapName => {
     const mapEl = document.createElement('div');
     mapEl.className = 'ddnettube-map';
-    mapEl.innerHTML = `<span>${mapName}</span><span class="ddnettube-nickname-remove">×</span>`;
+    mapEl.innerHTML = `<span>${esc(mapName)}</span><span class="ddnettube-nickname-remove">×</span>`;
     mapEl.querySelector('.ddnettube-nickname-remove').onclick = () => removeMap(mapName);
     mapRow.appendChild(mapEl);
   });
 
+  // Map Autocomplete Wrapper
+  const mapInputWrapper = document.createElement('div');
+  mapInputWrapper.style.position = 'relative';
+  mapInputWrapper.style.display = 'inline-block';
+
   const mapInput = document.createElement('input');
   mapInput.className = 'ddnettube-text-input';
   mapInput.placeholder = 'Add map and press Enter...';
+  
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ddnettube-autocomplete-dropdown';
+  dropdown.style.display = 'none';
+
+  mapInput.oninput = (e) => {
+    const val = e.target.value.toLowerCase().trim();
+    if (!val) {
+      dropdown.style.display = 'none';
+      return;
+    }
+    
+    // Filter maps (up to 10 matches)
+    const matches = cachedMaps.filter(m => m.toLowerCase().includes(val)).slice(0, 10);
+    
+    if (matches.length > 0) {
+      dropdown.innerHTML = '';
+      matches.forEach(match => {
+        const item = document.createElement('div');
+        item.className = 'ddnettube-autocomplete-item';
+        item.innerText = match;
+        item.onmousedown = () => {
+          addMap(match);
+          mapInput.value = '';
+          dropdown.style.display = 'none';
+        };
+        dropdown.appendChild(item);
+      });
+      dropdown.style.display = 'block';
+    } else {
+      dropdown.style.display = 'none';
+    }
+  };
+
+  mapInput.onblur = () => {
+    setTimeout(() => { dropdown.style.display = 'none'; }, 150);
+  };
+
+  mapInput.onfocus = () => {
+    if (mapInput.value.trim()) mapInput.dispatchEvent(new Event('input'));
+  };
+
   mapInput.onkeydown = (e) => {
     if (e.key === 'Enter') {
       addMap(e.target.value);
+      mapInput.value = '';
+      dropdown.style.display = 'none';
     }
   };
-  mapRow.appendChild(mapInput);
+  
+  mapInputWrapper.appendChild(mapInput);
+  mapInputWrapper.appendChild(dropdown);
+  mapRow.appendChild(mapInputWrapper);
 
   panel.appendChild(mapRow);
 
@@ -290,7 +364,7 @@ function renderPanel() {
   currentData.clans.forEach(clanName => {
     const clanEl = document.createElement('div');
     clanEl.className = 'ddnettube-clan ddnettube-map'; // Re-use map styles for general chips
-    clanEl.innerHTML = `<span>${clanName}</span><span class="ddnettube-nickname-remove">×</span>`;
+    clanEl.innerHTML = `<span>${esc(clanName)}</span><span class="ddnettube-nickname-remove">×</span>`;
     clanEl.querySelector('.ddnettube-nickname-remove').onclick = () => removeClan(clanName);
     clanRow.appendChild(clanEl);
   });
@@ -319,13 +393,28 @@ function init() {
 
   // In SPA, if we navigate to a new video, the old panel should be updated
   currentVideoId = vid;
-  currentData = { tags: { game: [], video: [], mode: [], gameplayer: [] }, players: [], maps: [], clans: [] };
+  currentData = { tags: { game: [], video: [], mode: [], gameplayer: [], lang: [] }, players: [], maps: [], clans: [] };
 
   // Load existing data
-  chrome.storage.local.get(['videos'], (res) => {
+  chrome.storage.local.get(['videos', 'cached_maps', 'cached_maps_time'], (res) => {
     const videos = res.videos || {};
+    
+    // Setup maps cache
+    cachedMaps = res.cached_maps || [];
+    const now = Date.now();
+    if (!res.cached_maps_time || (now - res.cached_maps_time > 24 * 60 * 60 * 1000) || cachedMaps.length === 0) {
+      fetch('https://ddstats.tw/maps/json')
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            cachedMaps = data.map(m => m.map); // Extract map names
+            chrome.storage.local.set({ cached_maps: cachedMaps, cached_maps_time: now });
+          }
+        }).catch(err => console.error("Failed to fetch DDStats maps", err));
+    }
+
     if (videos[vid]) {
-      currentData.tags = videos[vid].tags || { game: [], video: [], mode: [], gameplayer: [] };
+      currentData.tags = videos[vid].tags || { game: [], video: [], mode: [], gameplayer: [], lang: [] };
       currentData.players = videos[vid].players || videos[vid].nicknames || []; // fallback for old data
       currentData.maps = videos[vid].maps || [];
       currentData.clans = videos[vid].clans || [];

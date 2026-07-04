@@ -14,8 +14,8 @@
   "action": {
     "default_title": "Open Dashboard",
     "default_icon": {
-      "48": "icon48.png",
-      "128": "icon128.png"
+      "48": "icon_admin48.png",
+      "128": "icon_admin128.png"
     }
   },
   "background": {
@@ -32,7 +32,7 @@
     }
   ],
   "icons": {
-    "48": "icon48.png",
-    "128": "icon128.png"
+    "48": "icon_admin48.png",
+    "128": "icon_admin128.png"
   }
 }

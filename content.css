@@ -48,13 +48,16 @@
   left: 4px;
   background-color: #2ecc71;
   color: #fff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: bold;
-  padding: 2px 6px;
+  padding: 3px 6px;
   border-radius: 4px;
   z-index: 9999;
   box-shadow: 0 1px 3px rgba(0,0,0,0.5);
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .ddnettube-tag:hover {
@@ -124,4 +127,35 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.ddnettube-autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--yt-spec-brand-background-solid, #0f0f0f);
+  border: 1px solid var(--yt-spec-10-percent-layer, rgba(255, 255, 255, 0.2));
+  border-top: none;
+  z-index: 10000;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.ddnettube-autocomplete-item {
+  padding: 8px;
+  cursor: pointer;
+  color: var(--yt-spec-text-primary, #fff);
+  border-bottom: 1px solid var(--yt-spec-10-percent-layer, rgba(255, 255, 255, 0.1));
+}
+
+.ddnettube-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.ddnettube-autocomplete-item:hover {
+  background: var(--yt-spec-10-percent-layer, rgba(255,255,255,0.3));
 }
