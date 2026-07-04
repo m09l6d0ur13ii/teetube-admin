@@ -402,8 +402,8 @@ function initAdminPanel() {
 
       syncStatus.innerText = '♻️ Purging global CDN cache...';
       try {
-        // The timestamp query string parameter forces jsDelivr to bypass the cache
-        await fetch(`https://cdn.jsdelivr.net/gh/m09l6d0ur13ii/teetube-db@main/database.json?_=${Date.now()}`);
+        // Use the official jsDelivr Purge API to invalidate the cache globally
+        await fetch(`https://purge.jsdelivr.net/gh/m09l6d0ur13ii/teetube-db@main/database.json`);
       } catch (purgeErr) {
         console.warn('CDN Purge failed, but DB updated', purgeErr);
       }
