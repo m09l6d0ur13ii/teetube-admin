@@ -551,18 +551,23 @@ function injectChannelBadges() {
   
   channelEls.forEach(el => {
     try {
-      const author = el.innerText.trim();
+      let badge = el.querySelector('.teetube-channel-badge');
+      let rawText = el.innerText || el.textContent || '';
+      if (badge) {
+        rawText = rawText.replace(badge.innerText || badge.textContent, '');
+      }
+      const author = rawText.trim();
+      
       if (!author) return;
       const lowerAuthor = author.toLowerCase();
       
       const count = authorCounts[lowerAuthor];
       if (!count) {
-        const wrongBadge = el.querySelector('.teetube-channel-badge');
-        if (wrongBadge) wrongBadge.remove();
+        if (badge) badge.remove();
         return;
       }
 
-      let badge = el.querySelector('.teetube-channel-badge');
+      // badge is already defined above
       
       let badgeText = `✔ teetube (${count} saved)`;
 

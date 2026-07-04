@@ -19,9 +19,13 @@ async function updateAdminDatabase() {
           const localVideos = localRes.videos || {};
           
           // Merge the remote videos with our local ones. 
-          // Note: Because localVideos is spread last, it will overwrite remote changes for existing videos.
-          // This is a known issue if multiple admins are editing the same videos.
-          const merged = { ...db.videos, ...localVideos };
+          // Only overwrite remote data if the local video has unsynced changes (timestamp)
+          const merged = { ...db.videos };
+          for (const [id, v] of Object.entries(localVideos)) {
+            if (v.timestamp || !merged[id]) {
+              merged[id] = v;
+            }
+          }
           
           // Save the merged result back to local storage
           chrome.storage.local.set({ videos: merged });
